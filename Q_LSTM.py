@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+from utils import get_device
 
 
 class LSTM(nn.Module):
@@ -26,9 +27,12 @@ class LSTM(nn.Module):
 
         c_0 = Variable(torch.zeros(
             self.num_layers, x.size(0), self.hidden_size))
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = get_device()
+        print(h_0.device)
         h_0.to(device)
         c_0.to(device)
+        print(x.device)
+        print(h_0.device)
 
         # Propagate input through LSTM
         ula, (h_out, _) = self.lstm(x, (h_0, c_0))
