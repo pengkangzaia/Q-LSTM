@@ -39,9 +39,9 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
         lstm = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
         # 将模型转移到指定设备上
         device = get_device()
-        lstm.to(device)
-        dataX.to(device)
-        dataY.to(device)
+        lstm = lstm.to(device)
+        dataX = dataX.to(device)
+        dataY = dataY.to(device)
         optimizer = torch.optim.Adam(lstm.parameters(), lr=learning_rate)
         # Train the model
         for epoch in range(num_epochs):
