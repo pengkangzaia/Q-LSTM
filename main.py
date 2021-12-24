@@ -84,7 +84,7 @@ def get_labels(seq_length: int = 4, nrows: int = 1000):
 def test_swat(seq_length: int = 4, nrows: int = 1000):
     abnormal_rates = []
     abnormals = []
-    l = get_labels(seq_length=seq_length)
+    l = get_labels(seq_length=seq_length, nrows=nrows)
     for idx in range(len(swat_columns)):
         col = swat_columns[idx]
         testing_set = pd.read_csv('SWaT_Dataset_Attack_v0.csv', usecols=[col, 'Normal/Attack'], sep=';', nrows=nrows)
