@@ -12,6 +12,7 @@ str_cols = 'FIT101;LIT101;MV101;P101;P102;AIT201;AIT202;AIT203;FIT201;MV201;P201
            ';AIT501;AIT502;AIT503;AIT504;FIT501;FIT502;FIT503;FIT504;P501;P502;PIT501;PIT502;PIT503;FIT601;P601;P602' \
            ';P603'
 swat_columns = str_cols.split(';')
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def train_swat(seq_length: int = 4, nrows: int = 100):
@@ -37,6 +38,10 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
         num_classes = 1
 
         lstm = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
+        # 将模型转移到指定设备上
+        lstm.to(device)
+        dataX.to(device)
+        dataY.to(device)
         optimizer = torch.optim.Adam(lstm.parameters(), lr=learning_rate)
         # Train the model
         for epoch in range(num_epochs):
