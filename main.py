@@ -17,7 +17,7 @@ swat_columns = str_cols.split(';')
 def train_swat(seq_length: int = 4):
     for idx in range(len(swat_columns)):
         col = swat_columns[idx]
-        training_set = pd.read_csv('SWaT_Dataset_Normal_v1.csv', usecols=[col])
+        training_set = pd.read_csv('SWaT_Dataset_Normal_v1.csv', usecols=[col], nrows=100)
         training_set[col] = training_set[col].apply(lambda x: str(x).replace(",", "."))
         training_set = training_set.astype(float)
         training_set = training_set.iloc[:, 0:1].values
@@ -74,7 +74,7 @@ def train_swat(seq_length: int = 4):
 
 
 def get_labels(seq_length: int = 4):
-    testing_set = pd.read_csv('SWaT_Dataset_Attack_v0.csv', usecols=['Normal/Attack'], sep=';')
+    testing_set = pd.read_csv('SWaT_Dataset_Attack_v0.csv', usecols=['Normal/Attack'], sep=';', nrows=100)
     labels = [float(label != 'Normal') for label in testing_set["Normal/Attack"].values]
     _, l = sliding_windows(labels, seq_length=seq_length)
     l = l.astype(np.int32)
@@ -87,7 +87,7 @@ def test_swat(seq_length: int = 4):
     l = get_labels(seq_length=seq_length)
     for idx in range(len(swat_columns)):
         col = swat_columns[idx]
-        testing_set = pd.read_csv('SWaT_Dataset_Attack_v0.csv', usecols=[col, 'Normal/Attack'], sep=';')
+        testing_set = pd.read_csv('SWaT_Dataset_Attack_v0.csv', usecols=[col, 'Normal/Attack'], sep=';', nrows=100)
         testing_set[col] = testing_set[col].apply(lambda x: str(x).replace(",", "."))
         testing_set = testing_set.iloc[:, 0:1]
         testing_set = testing_set.astype(float)
@@ -139,8 +139,3 @@ def test_swat(seq_length: int = 4):
         if final_res[i] == l[i]:
             same += 1
     print('按每个维度投票之后的准确率值: ' + str(same / len(l)))
-
-
-
-# train_swat()
-test_swat()
