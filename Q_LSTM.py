@@ -26,6 +26,9 @@ class LSTM(nn.Module):
 
         c_0 = Variable(torch.zeros(
             self.num_layers, x.size(0), self.hidden_size))
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        h_0.to(device)
+        c_0.to(device)
 
         # Propagate input through LSTM
         ula, (h_out, _) = self.lstm(x, (h_0, c_0))
