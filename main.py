@@ -14,10 +14,10 @@ str_cols = 'FIT101;LIT101;MV101;P101;P102;AIT201;AIT202;AIT203;FIT201;MV201;P201
 swat_columns = str_cols.split(';')
 
 
-def train_swat(seq_length: int = 4):
+def train_swat(seq_length: int = 4, nrows: int = 100):
     for idx in range(len(swat_columns)):
         col = swat_columns[idx]
-        training_set = pd.read_csv('SWaT_Dataset_Normal_v1.csv', usecols=[col], nrows=100)
+        training_set = pd.read_csv('SWaT_Dataset_Normal_v1.csv', usecols=[col], nrows=nrows)
         training_set[col] = training_set[col].apply(lambda x: str(x).replace(",", "."))
         training_set = training_set.astype(float)
         training_set = training_set.iloc[:, 0:1].values
@@ -73,21 +73,21 @@ def train_swat(seq_length: int = 4):
         plt.show()
 
 
-def get_labels(seq_length: int = 4):
-    testing_set = pd.read_csv('SWaT_Dataset_Attack_v0.csv', usecols=['Normal/Attack'], sep=';', nrows=100)
+def get_labels(seq_length: int = 4, nrows: int = 1000):
+    testing_set = pd.read_csv('SWaT_Dataset_Attack_v0.csv', usecols=['Normal/Attack'], sep=';', nrows=nrows)
     labels = [float(label != 'Normal') for label in testing_set["Normal/Attack"].values]
     _, l = sliding_windows(labels, seq_length=seq_length)
     l = l.astype(np.int32)
     return l
 
 
-def test_swat(seq_length: int = 4):
+def test_swat(seq_length: int = 4, nrows: int = 1000):
     abnormal_rates = []
     abnormals = []
     l = get_labels(seq_length=seq_length)
     for idx in range(len(swat_columns)):
         col = swat_columns[idx]
-        testing_set = pd.read_csv('SWaT_Dataset_Attack_v0.csv', usecols=[col, 'Normal/Attack'], sep=';', nrows=100)
+        testing_set = pd.read_csv('SWaT_Dataset_Attack_v0.csv', usecols=[col, 'Normal/Attack'], sep=';', nrows=nrows)
         testing_set[col] = testing_set[col].apply(lambda x: str(x).replace(",", "."))
         testing_set = testing_set.iloc[:, 0:1]
         testing_set = testing_set.astype(float)
