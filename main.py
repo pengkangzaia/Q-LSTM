@@ -62,9 +62,9 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
         lstm.eval()
         train_predict_low, train_predict_high = lstm(dataX)
 
-        data_predict_low = train_predict_low.data.numpy()
-        data_predict_high = train_predict_high.data.numpy()
-        dataY_plot = dataY.data.numpy()
+        data_predict_low = train_predict_low.data.to(device).numpy()
+        data_predict_high = train_predict_high.data.to(device).numpy()
+        dataY_plot = dataY.data.to(device).numpy()
 
         data_predict_low = sc.inverse_transform(data_predict_low)
         data_predict_high = sc.inverse_transform(data_predict_high)
