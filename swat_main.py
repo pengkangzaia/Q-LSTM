@@ -111,13 +111,20 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
         num_layers = 1
         num_classes = 1
         model = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
-        model.load_state_dict(torch.load('trained_model/swat/saved_model{}'.format(idx), map_location=torch.device('cpu')))
+        if torch.cuda.is_available():
+            model.load_state_dict(torch.load('trained_model/swat/saved_model{}'.format(idx)))
+        else:
+            model.load_state_dict(torch.load('trained_model/swat/saved_model{}'.format(idx), map_location=torch.device('cpu')))
         model.eval()
+        device = get_device()
+        model = model.to(device)
+        dataX = dataX.to(device)
+        dataY = dataY.to(device)
         test_predict_low, test_predict_high = model(dataX)
 
-        data_predict_low = test_predict_low.data.numpy()
-        data_predict_high = test_predict_high.data.numpy()
-        dataY_plot = dataY.data.numpy()
+        data_predict_low = test_predict_low.data.cpu().numpy()
+        data_predict_high = test_predict_high.data.cpu().numpy()
+        dataY_plot = dataY.data.cpu().numpy()
         plt.plot(data_predict_high, color='blue', label='high quantile')
         plt.plot(dataY_plot, color='green', label='origin')
         plt.plot(data_predict_low, color='red', label='low quantile')
