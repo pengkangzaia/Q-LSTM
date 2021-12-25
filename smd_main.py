@@ -9,10 +9,9 @@ from eval_methods import *
 from utils import sliding_windows, quantile_loss, get_device
 
 # 28 files in total
-# entity_ids = ["1-1", "1-2", "1-3", "1-4", "1-5", "1-6", "1-7", "1-8",
-#               "2-1", "2-2", "2-3", "2-4", "2-5", "2-6", "2-7", "2-8", "2-9",
-#               "3-1", "3-2", "3-3", "3-4", "3-5", "3-6", "3-7", "3-8", "3-9", "3-10", "3-11"]
-entity_ids = ["1-1", "1-2"]
+entity_ids = ["1-1", "1-2", "1-3", "1-4", "1-5", "1-6", "1-7", "1-8",
+              "2-1", "2-2", "2-3", "2-4", "2-5", "2-6", "2-7", "2-8", "2-9",
+              "3-1", "3-2", "3-3", "3-4", "3-5", "3-6", "3-7", "3-8", "3-9", "3-10", "3-11"]
 
 
 def train_smd(seq_length: int = 4, nrows: int = 1000):
@@ -107,6 +106,7 @@ def test_psm_for_entity(entity_id: str, seq_length: int = 4, nrows: int = 1000):
     df = pd.read_csv('data/smd/test/machine-' + entity_id + '.txt', header=None, nrows=nrows)
     col_num = df.shape[1]
     slided_labels = get_labels(entity_id=entity_id, seq_length=seq_length, nrows=nrows)
+    slided_labels = slided_labels.squeeze()
     for idx in range(col_num):
         testing_set = pd.read_csv('data/smd/test/machine-' + entity_id + '.txt', usecols=[idx], header=None,
                                   nrows=nrows)
