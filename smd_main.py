@@ -32,7 +32,7 @@ def train_smd(seq_length: int = 4, nrows: int = 1000):
             dataY = Variable(torch.Tensor(np.array(y)))
 
             # 超参
-            num_epochs = 2000
+            num_epochs = 1000
             learning_rate = 0.01
             input_size = 1
             hidden_size = 2
