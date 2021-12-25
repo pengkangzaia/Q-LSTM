@@ -56,7 +56,7 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
             optimizer.step()
             if epoch % 100 == 0:
                 print("Epoch: %d, loss: %1.5f" % (epoch, loss.item()))
-        torch.save(lstm.state_dict(), 'trained_model/saved_model{}'.format(idx))
+        torch.save(lstm.state_dict(), 'trained_model/swat/saved_model{}'.format(idx))
 
         # 可视化结果
         lstm.eval()
@@ -111,7 +111,7 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
         num_layers = 1
         num_classes = 1
         model = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
-        model.load_state_dict(torch.load('trained_model/saved_model{}'.format(idx)))
+        model.load_state_dict(torch.load('trained_model/swat/saved_model{}'.format(idx), map_location=torch.device('cpu')))
         model.eval()
         test_predict_low, test_predict_high = model(dataX)
 
@@ -123,6 +123,7 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
         plt.plot(data_predict_low, color='red', label='low quantile')
         plt.suptitle('Time-Series Prediction Test, column name: {}'.format(col))
         plt.legend()
+        plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
         plt.show()
 
         abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
