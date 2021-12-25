@@ -49,8 +49,8 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
             optimizer.zero_grad()
 
             # obtain the loss function
-            loss_low = torch.sum(quantile_loss(0.05, dataY, output_low), dim=0)
-            loss_high = torch.sum(quantile_loss(0.95, dataY, output_high), dim=0)
+            loss_low = torch.sum(quantile_loss(0.01, dataY, output_low), dim=0)
+            loss_high = torch.sum(quantile_loss(0.99, dataY, output_high), dim=0)
             loss = loss_low + loss_high
             loss.backward()
             optimizer.step()
