@@ -17,7 +17,6 @@ def train_psm(seq_length: int = 4, nrows: int = 1000):
     for idx in range(len(psm_columns)):
         col = psm_columns[idx]
         training_set = pd.read_csv('data/psm/train.csv', usecols=[col], nrows=nrows)
-        training_set[col] = training_set[col].apply(lambda x: str(x).replace(",", "."))
         training_set[col].fillna(0, inplace=True)  # imputes missing values
         training_set = training_set.astype(float)
         training_set = training_set.iloc[:, 0:1].values
@@ -93,7 +92,6 @@ def test_psm(seq_length: int = 4, nrows: int = 1000):
     for idx in range(len(psm_columns)):
         col = psm_columns[idx]
         testing_set = pd.read_csv('data/psm/test.csv', usecols=[col], sep=',', nrows=nrows)
-        # testing_set[col] = testing_set[col].apply(lambda x: str(x).replace(",", "."))
         testing_set = testing_set.iloc[:, 0:1]
         testing_set = testing_set.astype(float)
         testing_set = testing_set.values
