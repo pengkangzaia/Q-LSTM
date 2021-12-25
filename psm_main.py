@@ -115,10 +115,8 @@ def test_psm(seq_length: int = 4, nrows: int = 1000):
             model.load_state_dict(torch.load('trained_model/psm/saved_model{}'.format(idx), map_location=torch.device('cpu')))
         # 将模型转移到指定设备上
         device = get_device()
-        print(device)
         model = model.to(device)
         dataX = dataX.to(device)
-        print(dataX.device)
         dataY = dataY.to(device)
         model.eval()
         test_predict_low, test_predict_high = model(dataX)
