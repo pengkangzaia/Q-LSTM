@@ -6,6 +6,7 @@ from Q_LSTM import LSTM
 from torch.autograd import Variable
 from sklearn.preprocessing import MinMaxScaler
 from utils import sliding_windows, quantile_loss, get_device
+from eval_methods import *
 
 str_cols = 'feature_0,feature_1,feature_2,feature_3,feature_4,feature_5,feature_6,feature_7,feature_8,feature_9,' \
            'feature_10,feature_11,feature_12,feature_13,feature_14,feature_15,feature_16,feature_17,feature_18,' \
@@ -151,3 +152,5 @@ def test_psm(seq_length: int = 4, nrows: int = 1000):
         if final_res[i] == slided_labels[i]:
             same += 1
     print('按每个维度投票之后的准确率值: ' + str(same / len(slided_labels)))
+    t, th = bf_search(np.mean(abnormals, axis=0), slided_labels, start=0., end=0.9, step_num=int((0.9-0.)/0.001), display_freq=100)
+

@@ -6,6 +6,7 @@ from Q_LSTM import LSTM
 from torch.autograd import Variable
 from sklearn.preprocessing import MinMaxScaler
 from utils import sliding_windows, quantile_loss, get_device
+from eval_methods import *
 
 str_cols = 'FIT101;LIT101;MV101;P101;P102;AIT201;AIT202;AIT203;FIT201;MV201;P201;P202;P203;P204;P205;P206;DPIT301' \
            ';FIT301;LIT301;MV301;MV302;MV303;MV304;P301;P302;AIT401;AIT402;FIT401;LIT401;P401;P402;P403;P404;UV401' \
@@ -152,3 +153,5 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
         if final_res[i] == l[i]:
             same += 1
     print('按每个维度投票之后的准确率值: ' + str(same / len(l)))
+    t, th = bf_search(np.mean(abnormals, axis=0), l, start=0., end=0.9, step_num=int((0.9-0.)/0.001), display_freq=100)
+
