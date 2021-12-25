@@ -28,6 +28,7 @@ class LSTM(nn.Module):
         c_0 = Variable(torch.zeros(
             self.num_layers, x.size(0), self.hidden_size))
         device = get_device()
+        x = x.to(device)
         h_0 = h_0.to(device)
         c_0 = c_0.to(device)
 
