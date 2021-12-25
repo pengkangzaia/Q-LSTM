@@ -1,4 +1,4 @@
-from main import *
+from psm_main import *
 
-train_swat(nrows=1000)
-# test_swat(nrows=449919)
+# train_psm()
+test_psm()
