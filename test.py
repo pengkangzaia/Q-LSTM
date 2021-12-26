@@ -56,11 +56,15 @@ import os
 # a = [[1, 2], [2, 3], [3, 4], [4, 5]]
 # b = str(a)
 # c = eval(b)
-from smap_main import train_smap, test_smap_for_all_channel
+# from smap_main import train_smap, test_smap_for_all_channel
 
 # train_smap()
-test_smap_for_all_channel()
+# test_smap_for_all_channel()
 
+from msl_main import train_msl, test_msl_for_all_channel
+
+# train_msl()
+test_msl_for_all_channel()
 
 
 pass
