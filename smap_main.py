@@ -86,12 +86,17 @@ def train_smap(seq_length: int = 4):
 
 def get_labels(channel_id: str, seq_length: int = 4):
     df = pd.read_csv('data/smap_msl/labeled_anomalies.csv')
-    channel_info = df[df['chan_id'] == channel_id]
-    # 初始化数组，设置异常位置值为1
-    labels = numpy.zeros(int(channel_info['num_values']))
-    anomaly_loc = eval(str(channel_info['anomaly_sequences'].values[0]))
-    for start, end in anomaly_loc:
-        labels[start:end] = 1
+    if 'P-2' == channel_id:
+        # P-2 channel 特殊处理 https://github.com/khundman/telemanom/issues/8
+        labels = numpy.zeros(8209)
+        labels[5300: 6575] = 1
+    else:
+        channel_info = df[df['chan_id'] == channel_id]
+        # 初始化数组，设置异常位置值为1
+        labels = numpy.zeros(int(channel_info['num_values']))
+        anomaly_loc = eval(str(channel_info['anomaly_sequences'].values[0]))
+        for start, end in anomaly_loc:
+            labels[start:end] = 1
     _, slided_labels = sliding_windows(labels, seq_length=seq_length)
     slided_labels = slided_labels.astype(np.int32)
     return slided_labels
