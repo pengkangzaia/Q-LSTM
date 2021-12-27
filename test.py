@@ -70,7 +70,9 @@ import os
 
 
 # df1 = pd.read_csv('data/wadi/WADI_attackdata.csv', usecols=['Date', 'Time'])
-# # df1 = pd.read_csv('data/wadi/WADI_14days.csv', skiprows=4, index_col=0, nrows=100)
+# df1 = pd.read_csv('data/wadi/WADI_14days.csv', skiprows=4, index_col=0)
+# a = np.where(np.isnan(df1))
+pass
 # df1['Timestamp'] = df1['Date'] + " " + df1['Time']
 # df1["Timestamp"] = pd.to_datetime(df1["Timestamp"], format="%m/%d/%Y %I:%M:%S.000 %p")
 # df1["unix"] = df1["Timestamp"].astype(np.int64)
@@ -130,8 +132,9 @@ import os
 # d = c * (10 ** 9)
 from wadi_main import test_wadi, train_wadi
 
-# train_wadi(nrows=1000)
-test_wadi(nrows=1000)
+train_wadi(nrows=None)
+# # test_wadi(nrows=1000)
+
 
 
 

@@ -27,7 +27,6 @@ def train_wadi(seq_length: int = 4, nrows: int = 100):
     wadi_columns = get_columns()
     for idx in range(len(wadi_columns)):
         col = wadi_columns[idx]
-        col = '1_AIT_002_PV'
         training_set = pd.read_csv('data/wadi/WADI_14days.csv', skiprows=4, index_col=0, nrows=nrows)
         training_set = training_set.dropna(axis=1, how='all')
         training_set = training_set.drop(['Date', 'Time'], axis=1)
@@ -50,7 +49,6 @@ def train_wadi(seq_length: int = 4, nrows: int = 100):
         hidden_size = 2
         num_layers = 1
         num_classes = 1
-        batch_size = training_set.shape[0]
 
         lstm = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
         # 将模型转移到指定设备上
@@ -59,26 +57,20 @@ def train_wadi(seq_length: int = 4, nrows: int = 100):
         dataX = dataX.to(device)
         dataY = dataY.to(device)
         optimizer = torch.optim.Adam(lstm.parameters(), lr=learning_rate)
-        train_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(dataX.float(), dataY.float()),
-                                                   batch_size=batch_size, shuffle=False, num_workers=0)
-
 
         # Train the model
         for epoch in range(num_epochs):
-            loss_sum = 0
-            for [batchX, batchY] in train_loader:
-                output_low, output_high = lstm(batchX)
-                optimizer.zero_grad()
+            output_low, output_high = lstm(dataX)
+            optimizer.zero_grad()
 
-                # obtain the loss function
-                loss_low = torch.sum(quantile_loss(0.01, batchY, output_low), dim=0)
-                loss_high = torch.sum(quantile_loss(0.99, batchY, output_high), dim=0)
-                loss = loss_low + loss_high
-                loss_sum += loss.item()
-                loss.backward()
-                optimizer.step()
+            # obtain the loss function
+            loss_low = torch.sum(quantile_loss(0.01, dataY, output_low), dim=0)
+            loss_high = torch.sum(quantile_loss(0.99, dataY, output_high), dim=0)
+            loss = loss_low + loss_high
+            loss.backward()
+            optimizer.step()
             if epoch % 100 == 0:
-                print("Epoch: %d, loss: %1.5f" % (epoch, loss_sum))
+                print("Epoch: %d, loss: %1.5f" % (epoch, loss.item()))
         torch.save(lstm.state_dict(), 'trained_model/wadi/saved_model{}'.format(idx))
 
         # 可视化结果
