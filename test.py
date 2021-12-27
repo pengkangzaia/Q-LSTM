@@ -135,7 +135,7 @@ pass
 # train_wadi(nrows=None)
 # # test_wadi(nrows=1000)
 
-for i in range(10 - 1, -1, -1):
+for i in range(5, 7, 1):
     print(i)
 
 
