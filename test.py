@@ -130,10 +130,13 @@ pass
 # b = time.mktime(a)
 # c = int(b)
 # d = c * (10 ** 9)
-from wadi_main import test_wadi, train_wadi
-
-train_wadi(nrows=None)
+# from wadi_main import test_wadi, train_wadi
+#
+# train_wadi(nrows=None)
 # # test_wadi(nrows=1000)
+
+for i in range(10 - 1, -1, -1):
+    print(i)
 
 
 

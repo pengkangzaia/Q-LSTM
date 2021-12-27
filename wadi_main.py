@@ -25,7 +25,8 @@ def get_columns():
 
 def train_wadi(seq_length: int = 4, nrows: int = 100):
     wadi_columns = get_columns()
-    for idx in range(len(wadi_columns)):
+    for idx in range(len(wadi_columns) - 1, -1, -1):
+    # for idx in range(len(wadi_columns)):
         col = wadi_columns[idx]
         training_set = pd.read_csv('data/wadi/WADI_14days.csv', skiprows=4, index_col=0, nrows=nrows)
         training_set = training_set.dropna(axis=1, how='all')
