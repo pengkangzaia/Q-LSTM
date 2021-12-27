@@ -173,6 +173,7 @@ def test_smap_for_channel(channel_id: str, seq_length: int = 4):
                 same += 1
         abnormal_rates.append(same / test_size)
         abnormals.append(abnormal)
+    print('当前预测channel：' + channel_id)
     print('预测正确率:' + str(abnormal_rates))
     avg_rate = np.array(abnormal_rates).mean()
     print('预测平均正确率: ' + str(avg_rate))
