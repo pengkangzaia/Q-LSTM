@@ -2,6 +2,7 @@ import os
 
 import influxdb_client
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from flask import Flask, request
 from sklearn.preprocessing import MinMaxScaler
@@ -13,24 +14,51 @@ from utils import sliding_windows, quantile_loss
 app = Flask(__name__)
 
 
-@app.route("/pred", methods=["POST"])
-def predict():
-    data = request.get_json()
-    # data数据需要标准化到0-1
-    data = np.array(data)
+def query_dataframe(flux: str):
+    # 1. 读取数据
+    bucket = "monitor"
+    org = "seu"
+    token = "gZTu3-P2pKcGQI-wBgHUT1nRIckb7N_drF-r9YKUdbszy1hTrN3BwIR5CdFHshzGcW81n_SbjfI5-RQsUz11zA=="
+    url = "http://101.35.159.221:8086"
+    client = influxdb_client.InfluxDBClient(url=url, token=token, org=org)
+    query_api = client.query_api()
+    # 3天数据量大概要半分钟
+    df = query_api.query_data_frame(flux)
+    return df
 
+
+@app.route("/pred", methods=["GET"])
+def predict():
+    seq_length = 4
+    ip = request.args.get("ip")
+    flux = 'from(bucket: "monitor")' \
+           '|> range(start: -1d)' \
+           '|> filter(fn: (r) => r["_measurement"] == "cpu2" ' \
+           'or r["_measurement"] == "disk" or r["_measurement"] == "memory" or r["_measurement"] == "net")' \
+           '|> filter(fn: (r) => r["address"] == "http://1.15.117.64:8081")' \
+           '|> sort(columns: ["_time"], desc: true)' \
+           '|> limit(n: 4)' \
+           '|> sort(columns: ["_time"], desc: false)' \
+           '|> drop(columns: ["result", "address", "_measurement", "_start", "_stop"])' \
+           '|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")'
+    df = query_dataframe(flux)
+    df = df.drop(['result', 'table', '_time'], axis=1)
+    cols = df.columns
     abnormals = []
-    for idx in range(len(data[0])):
-        seq_length = data.shape[0] - 1
-        d = np.expand_dims(data[:, idx], 1)
-        x = np.expand_dims(d[:-1], 0)
-        y = np.expand_dims(np.expand_dims(d[-1], 0), 0)
+    ip = ip.replace(".", "_")
+    for idx in range(len(cols)):
+        col = cols[idx]
+        testing_set = df[col].to_frame()
+        testing_set = testing_set.iloc[:, 0:1].values
+        sc = MinMaxScaler()
+        testing_data = sc.fit_transform(testing_set)
+
+        x, y = sliding_windows(testing_data, seq_length)
         dataX = Variable(torch.Tensor(np.array(x)))
         dataY = Variable(torch.Tensor(np.array(y)))
-
         model = LSTM(num_classes=1, input_size=1, hidden_size=2, seq_length=seq_length, num_layers=1)
         model.load_state_dict(
-            torch.load('../trained_model/psm/saved_model{}'.format(idx), map_location=torch.device('cpu')))
+            torch.load('web/trained_model/' + ip + '/model_{}'.format(col), map_location=torch.device('cpu')))
         model.eval()
         test_predict_low, test_predict_high = model(torch.FloatTensor(dataX))
         data_predict_low = test_predict_low.data.cpu().numpy()
@@ -55,18 +83,12 @@ def train():
     if not folder:
         os.makedirs('trained_model/' + ip)
     # 1. 读取数据
-    bucket = "monitor"
-    org = "seu"
-    token = "gZTu3-P2pKcGQI-wBgHUT1nRIckb7N_drF-r9YKUdbszy1hTrN3BwIR5CdFHshzGcW81n_SbjfI5-RQsUz11zA=="
-    url = "http://101.35.159.221:8086"
-    client = influxdb_client.InfluxDBClient(url=url, token=token, org=org)
-    query_api = client.query_api()
-    flux = 'from(bucket: "monitor")|> range(start: -60m)|> filter(fn: (r) => r["_measurement"] == "cpu2" or r[' \
+    flux = 'from(bucket: "monitor")|> range(start: -3d)|> filter(fn: (r) => r["_measurement"] == "cpu2" or r[' \
            '"_measurement"] == "disk" or r["_measurement"] == "memory" or r["_measurement"] == "net")|> filter(fn: (r) => ' \
            'r["address"] == "http://1.15.117.64:8081")|> drop(columns: ["result", "address", "_measurement", "_start", ' \
            '"_stop"])|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value") '
     # 3天数据量大概要半分钟
-    df = query_api.query_data_frame(flux)
+    df = query_dataframe(flux)
     df = df.drop(['result', 'table'], axis=1)
     df["_time"] = pd.to_datetime(df['_time'])
     df.index = df['_time']
@@ -138,7 +160,5 @@ def train():
     return "1"
 
 
-
-
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
