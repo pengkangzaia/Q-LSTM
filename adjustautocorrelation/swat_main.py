@@ -141,3 +141,7 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     print('按每个维度投票之后的准确率值: ' + str(same / len(l)))
     t, th = bf_search(np.mean(abnormal, axis=1), l, start=0., end=0.9, step_num=int((0.9 - 0.) / 0.001),
                       display_freq=100)
+
+
+train_swat(4, nrows=None)
+test_swat(4, nrows=None)
