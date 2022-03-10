@@ -33,7 +33,7 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
     learning_rate = 0.01
     input_size = training_set.shape[1]
     hidden_size = training_set.shape[1]
-    num_layers = 2
+    num_layers = 1
     num_classes = training_set.shape[1]
 
     lstm = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
@@ -105,7 +105,7 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     # 参数
     input_size = testing_set.shape[1]
     hidden_size = testing_set.shape[1]
-    num_layers = 2
+    num_layers = 1
     num_classes = testing_set.shape[1]
     model = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
     if torch.cuda.is_available():
@@ -143,5 +143,5 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
                       display_freq=100)
 
 
-train_swat(4, nrows=None)
-test_swat(4, nrows=None)
+train_swat(4, nrows=100)
+test_swat(4, nrows=100)
