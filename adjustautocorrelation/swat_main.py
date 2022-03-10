@@ -29,7 +29,7 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
     dataY = Variable(torch.Tensor(np.array(y)))
 
     # 超参
-    num_epochs = 100
+    num_epochs = 1000
     learning_rate = 0.01
     input_size = training_set.shape[1]
     hidden_size = training_set.shape[1]
