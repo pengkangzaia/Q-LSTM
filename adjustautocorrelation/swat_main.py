@@ -143,5 +143,5 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
                       display_freq=100)
 
 
-train_swat(4, nrows=100)
-test_swat(4, nrows=100)
+train_swat(4, nrows=None)
+test_swat(4, nrows=None)
