@@ -22,18 +22,18 @@ class LSTM(nn.Module):
         self.fc_high = nn.Linear(hidden_size, num_classes)
 
     def forward(self, x):
-        h_0 = Variable(torch.zeros(
-            self.num_layers, x.size(0), self.hidden_size))
-
-        c_0 = Variable(torch.zeros(
-            self.num_layers, x.size(0), self.hidden_size))
-        device = get_device()
-        x = x.to(device)
-        h_0 = h_0.to(device)
-        c_0 = c_0.to(device)
+        # h_0 = Variable(torch.zeros(
+        #     self.num_layers, x.size(0), self.hidden_size))
+        #
+        # c_0 = Variable(torch.zeros(
+        #     self.num_layers, x.size(0), self.hidden_size))
+        # device = get_device()
+        # x = x.to(device)
+        # h_0 = h_0.to(device)
+        # c_0 = c_0.to(device)
 
         # Propagate input through LSTM
-        ula, (h_out, _) = self.lstm(x, (h_0, c_0))
+        ula, (h_out, _) = self.lstm(x)
 
         # h_out = h_out[-1, :, :]
         # h_out = h_out.view(x.size(0), x.size(1), self.hidden_size)[:, -1]
