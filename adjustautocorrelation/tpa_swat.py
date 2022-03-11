@@ -95,7 +95,7 @@ def get_labels(seq_length: int = 4, nrows: int = 1000):
 
 
 def test_swat(seq_length: int = 4, nrows: int = 1000):
-    l = get_labels(seq_length=seq_length, nrows=nrows)
+    l = get_labels(seq_length=seq_length + 1, nrows=nrows)
     testing_set = pd.read_csv('../data/swat/SWaT_Dataset_Attack_v0.csv', sep=';', nrows=nrows, index_col="Timestamp")
     testing_set = testing_set.drop(["Normal/Attack"], axis=1)
     for i in list(testing_set):
@@ -105,52 +105,52 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     sc = MinMaxScaler()
     testing_data = sc.fit_transform(testing_set)
 
-    x, y = sliding_windows(testing_data, seq_length)
-    dataX = Variable(torch.Tensor(np.array(x)))
-    dataY = Variable(torch.Tensor(np.array(y)))
-    test_size = len(y)
-
-    # 参数
+    dataset = SwatDataset(testing_data, seq_length)
+    dataLoader = DataLoader(dataset=dataset, batch_size=10000, num_workers=0)
     input_size = testing_set.shape[1]
-    hidden_size = testing_set.shape[1]
+    hidden_size = 64
     num_layers = 1
-    num_classes = testing_set.shape[1]
-    model = TPA(num_classes, input_size, hidden_size, seq_length, num_layers)
+    ar_len = 24
+
+    model = TPA(seq_length, hidden_size, num_layers, ar_len, input_size)
     if torch.cuda.is_available():
-        model.load_state_dict(torch.load('model/swat'))
+        model.load_state_dict(torch.load('model/swat_tpa'))
     else:
-        model.load_state_dict(torch.load('model/swat', map_location=torch.device('cpu')))
+        model.load_state_dict(torch.load('model/swat_tpa', map_location=torch.device('cpu')))
     model.eval()
     device = get_device()
     model = model.to(device)
-    dataX = dataX.to(device)
-    dataY = dataY.to(device)
-    test_predict_low, test_predict_high = model(dataX)
+    for _, (dataX, dataY) in enumerate(dataLoader):
+        dataX = dataX.to(device)
+        dataY = dataY.to(device)
+        test_predict_low, test_predict_high = model(dataX)
 
-    data_predict_low = test_predict_low.data.cpu().numpy()
-    data_predict_high = test_predict_high.data.cpu().numpy()
-    dataY_plot = dataY.data.cpu().numpy()
-    for i in range(dataX.shape[1]):
-        plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
-        plt.plot(dataY_plot[:, i], color='green', label='origin')
-        plt.plot(data_predict_low[:, i], color='red', label='low quantile')
-        plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
-        plt.legend()
-        # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
-        plt.show()
+        data_predict_low = test_predict_low.data.cpu().numpy()
+        data_predict_high = test_predict_high.data.cpu().numpy()
+        dataY_plot = dataY.data.cpu().numpy()
+        a = dataX.shape[2]
+        print(a)
+        for i in range(dataX.shape[2]):
+            plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
+            plt.plot(dataY_plot[:, i], color='green', label='origin')
+            plt.plot(data_predict_low[:, i], color='red', label='low quantile')
+            plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
+            plt.legend()
+            # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
+            plt.show()
 
-    abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
-    final_res = np.mean(abnormal, axis=1)  # 每个样本获取到的异常分数
-    final_res = np.where(final_res > 0.5, 1, 0)
-    same = 0
-    for i in range(len(l)):
-        if final_res[i] == l[i]:
-            same += 1
-    print('按每个维度投票之后的准确率值: ' + str(same / len(l)))
-    t, th = bf_search(np.mean(abnormal, axis=1), l, start=0., end=0.9, step_num=int((0.9 - 0.) / 0.001),
-                      display_freq=100)
+        abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
+        final_res = np.mean(abnormal, axis=1)  # 每个样本获取到的异常分数
+        final_res = np.where(final_res > 0.5, 1, 0)
+        same = 0
+        for i in range(len(l)):
+            if final_res[i] == l[i]:
+                same += 1
+        print('按每个维度投票之后的准确率值: ' + str(same / len(l)))
+        t, th = bf_search(np.mean(abnormal, axis=1), l, start=0., end=0.9, step_num=int((0.9 - 0.) / 0.001),
+                          display_freq=100)
 
 
 if __name__ == '__main__':
     train_swat(seq_length=60, nrows=2000)
-    # test_swat(seeq_length, nrows=1000)
+    # test_swat(seq_length=60, nrows=1000)

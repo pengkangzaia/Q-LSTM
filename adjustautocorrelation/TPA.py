@@ -30,12 +30,13 @@ class TPA(nn.Module):
         self.lstm = nn.LSTM(input_size=hidden_size, hidden_size=hidden_size,
                             num_layers=n_layers, batch_first=True)
         self.att = TPA_Attention(seq_length, hidden_size)
-        self.out_proj = nn.Linear(hidden_size, input_size)
+        self.out_proj_low = nn.Linear(hidden_size, input_size)
+        self.out_proj_high = nn.Linear(hidden_size, input_size)
         self.ar = nn.Linear(ar_len, 1)
 
         self.ar_len = ar_len
-        self.fc_low = nn.Linear(input_size, input_size)
-        self.fc_high = nn.Linear(input_size, input_size)
+        # self.fc_low = nn.ModuleList([nn.Linear(input_size, input_size) for _ in range(input_size)])
+        # self.fc_high = nn.ModuleList([nn.Linear(input_size, input_size) for _ in range(input_size)])
 
     def forward(self, x):
         # batch_size, seq_len, input_size = x.size()
@@ -43,7 +44,8 @@ class TPA(nn.Module):
         hs, (ht, _) = self.lstm(px)
         ht = ht[-1]
         final_h = self.att(hs, ht)
-        out = self.out_proj(final_h) + self.ar(x[:, -self.ar_len:].transpose(1, 2))[:, :, 0]
-        out_low = self.fc_low(out)
-        out_high = self.fc_high(out)
+        out_low = self.out_proj_low(final_h) + self.ar(x[:, -self.ar_len:].transpose(1, 2))[:, :, 0]
+        out_high = self.out_proj_high(final_h) + self.ar(x[:, -self.ar_len:].transpose(1, 2))[:, :, 0]
+        # out_low = self.fc_low(out)
+        # out_high = self.fc_high(out)
         return out_low, out_high
