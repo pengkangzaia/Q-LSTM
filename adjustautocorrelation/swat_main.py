@@ -2,6 +2,8 @@ import torch
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from torch.optim.lr_scheduler import LambdaLR
+
 from LSTM import LSTM
 from torch.autograd import Variable
 from sklearn.preprocessing import MinMaxScaler
@@ -24,6 +26,7 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
     sc = MinMaxScaler()
     training_data = sc.fit_transform(training_set)
 
+    mean_df = training_data.mean(axis=0).astype(np.float32)
     x, y = sliding_windows(training_data, seq_length)
     dataX = Variable(torch.Tensor(np.array(x)))
     dataY = Variable(torch.Tensor(np.array(y)))
@@ -43,19 +46,34 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
     dataX = dataX.to(device)
     dataY = dataY.to(device)
     optimizer = torch.optim.Adam(lstm.parameters(), lr=learning_rate)
+    rho = torch.tensor(0.1, device='cpu', requires_grad=True)
+    rho_opt = torch.optim.Adam((rho,), lr=0.01)
+    rho_scheduler = LambdaLR(rho_opt, lr_lambda=lambda e: 1 ** e)
     # Train the model
     for epoch in range(num_epochs):
-        output_low, output_high = lstm(dataX)
-        optimizer.zero_grad()
+        with torch.autograd.set_grad_enabled(True):
+            rho = torch.tanh(rho)
 
-        # obtain the loss function
-        loss_low = torch.sum(quantile_loss(0.01, dataY, output_low), dim=0)
-        loss_high = torch.sum(quantile_loss(0.99, dataY, output_high), dim=0)
-        loss = loss_low + loss_high
-        loss.backward()
-        optimizer.step()
-        if epoch % 100 == 0:
-            print("Epoch: %d, loss: %1.5f" % (epoch, loss.item()))
+            b = np.expand_dims(mean_df, axis=(0, 1))
+            c = np.repeat(b, dataX.shape[0], axis=0)
+            dataX = torch.cat([torch.Tensor(c), dataX], dim=1)
+            dataX = dataX[:, 1:] - rho * dataX[:, :-1]
+            output_low, output_high = lstm(dataX)
+            output_low += rho * dataX[:, -1]
+            output_high += rho * dataX[:, -1]
+            # obtain the loss function
+            loss_low = torch.sum(quantile_loss(0.01, dataY, output_low), dim=0)
+            loss_high = torch.sum(quantile_loss(0.99, dataY, output_high), dim=0)
+            loss = loss_low + loss_high
+            loss.backward(retain_graph=True)
+            optimizer.step()
+            optimizer.zero_grad()
+            rho_opt.step()
+            rho_opt.zero_grad()
+            rho_scheduler.step()
+            if epoch % 100 == 0:
+                print("Epoch: %d, loss: %1.5f" % (epoch, loss.item()))
+                print("current rho= " + str(rho))
     torch.save(lstm.state_dict(), 'model/swat')
 
     # 可视化结果
@@ -79,7 +97,8 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
 
 
 def get_labels(seq_length: int = 4, nrows: int = 1000):
-    testing_set = pd.read_csv('../data/swat/SWaT_Dataset_Attack_v0.csv', usecols=['Normal/Attack'], sep=';', nrows=nrows)
+    testing_set = pd.read_csv('../data/swat/SWaT_Dataset_Attack_v0.csv', usecols=['Normal/Attack'], sep=';',
+                              nrows=nrows)
     labels = [float(label != 'Normal') for label in testing_set["Normal/Attack"].values]
     _, l = sliding_windows(labels, seq_length=seq_length)
     l = l.astype(np.int32)
@@ -123,12 +142,12 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     data_predict_high = test_predict_high.data.cpu().numpy()
     dataY_plot = dataY.data.cpu().numpy()
     for i in range(dataX.shape[1]):
-        plt.plot(data_predict_high[:,i], color='blue', label='high quantile')
-        plt.plot(dataY_plot[:,i], color='green', label='origin')
-        plt.plot(data_predict_low[:,i], color='red', label='low quantile')
+        plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
+        plt.plot(dataY_plot[:, i], color='green', label='origin')
+        plt.plot(data_predict_low[:, i], color='red', label='low quantile')
         plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
         plt.legend()
-    # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
+        # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
         plt.show()
 
     abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
@@ -143,5 +162,5 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
                       display_freq=100)
 
 
-train_swat(4, nrows=None)
-test_swat(4, nrows=None)
+train_swat(4, nrows=100)
+# test_swat(4, nrows=None)

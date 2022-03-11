@@ -12,11 +12,20 @@ from utils import sliding_windows, quantile_loss, get_device
 
 
 def get_smap_channel_ids():
-    df = pd.read_csv('data/smap_msl/labeled_anomalies.csv')
+    df = pd.read_csv('../data/smap_msl/labeled_anomalies.csv')
     smaps = df[df['spacecraft'] == 'SMAP']
     # 55 channels in total
     channel_ids = [i.split('.')[0] for i in smaps['chan_id'].values]
     return channel_ids
+
+def test():
+    df = []
+    channel_ids = get_smap_channel_ids()
+    for i in range(len(channel_ids)):
+        df.append(np.load('../data/smap_msl/data/train/' + channel_ids[i] + '.npy'))
+    pass
+
+test()
 
 
 def train_smap(seq_length: int = 4):
