@@ -150,108 +150,121 @@ pass
 
 from sklearn.preprocessing import MinMaxScaler
 
-ip = '127.0.0.1'
-ip = ip.replace(".", "_")
-print(ip)
-import os
+# ip = '127.0.0.1'
+# ip = ip.replace(".", "_")
+# print(ip)
+# import os
+#
+# folder = os.path.exists('web/trained_model/' + ip)
+# if not folder:
+#     os.makedirs('web/trained_model/' + ip)
+# # influx读取数据
+# import influxdb_client
+#
+# bucket = "monitor"
+# org = "seu"
+# token = "gZTu3-P2pKcGQI-wBgHUT1nRIckb7N_drF-r9YKUdbszy1hTrN3BwIR5CdFHshzGcW81n_SbjfI5-RQsUz11zA=="
+# url = "http://101.35.159.221:8086"
+# client = influxdb_client.InfluxDBClient(url=url, token=token, org=org)
+# query_api = client.query_api()
+# flux = 'from(bucket: "monitor")|> range(start: -1h)|> filter(fn: (r) => r["_measurement"] == "cpu2" or r[' \
+#        '"_measurement"] == "disk" or r["_measurement"] == "memory" or r["_measurement"] == "net")|> filter(fn: (r) => ' \
+#        'r["address"] == "http://1.15.117.64:8081")|> drop(columns: ["result", "address", "_measurement", "_start", ' \
+#        '"_stop"])|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value") '
+# # 3天数据量大概要半分钟
+# df_result = query_api.query_data_frame(flux)
+# df_result.to_csv('monitor.csv', index=False)
+# df = pd.read_csv('monitor.csv')
+# df = df.drop(['result', 'table'], axis=1)
+# df["_time"] = pd.to_datetime(df['_time'])
+# # df["_time"] = df["_time"].astype('int64')
+# df.index = df['_time']
+# df = df.resample('30S').mean()
+# df = df.interpolate(method='linear')
+# print(df.columns)
+#
+# import torch
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# from Q_LSTM import LSTM
+# from torch.autograd import Variable
+# from sklearn.preprocessing import MinMaxScaler
+# from utils import sliding_windows, quantile_loss, get_device
+# from eval_methods import *
+#
+# seq_length = 4
+# cols = df.columns
+# for idx in range(len(cols)):
+#     col = cols[idx]
+#     training_set = df[col].to_frame()
+#     training_set = training_set.iloc[:, 0:1].values
+#     sc = MinMaxScaler()
+#     training_data = sc.fit_transform(training_set)
+#
+#     x, y = sliding_windows(training_data, seq_length)
+#     dataX = Variable(torch.Tensor(np.array(x)))
+#     dataY = Variable(torch.Tensor(np.array(y)))
+#
+#     # 超参
+#     num_epochs = 2000
+#     learning_rate = 0.01
+#     input_size = 1
+#     hidden_size = 2
+#     num_layers = 1
+#     num_classes = 1
+#
+#     lstm = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
+#     # 将模型转移到指定设备上
+#     device = get_device()
+#     lstm = lstm.to(device)
+#     dataX = dataX.to(device)
+#     dataY = dataY.to(device)
+#     optimizer = torch.optim.Adam(lstm.parameters(), lr=learning_rate)
+#     # Train the model
+#     for epoch in range(num_epochs):
+#         output_low, output_high = lstm(dataX)
+#         optimizer.zero_grad()
+#
+#         # obtain the loss function
+#         loss_low = torch.sum(quantile_loss(0.01, dataY, output_low), dim=0)
+#         loss_high = torch.sum(quantile_loss(0.99, dataY, output_high), dim=0)
+#         loss = loss_low + loss_high
+#         loss.backward()
+#         optimizer.step()
+#         if epoch % 100 == 0:
+#             print("Epoch: %d, loss: %1.5f" % (epoch, loss.item()))
+#     torch.save(lstm.state_dict(), 'web/trained_model/' + ip + '/model_{}'.format(col))
+#
+#     # 可视化结果
+#     lstm.eval()
+#     train_predict_low, train_predict_high = lstm(dataX)
+#
+#     data_predict_low = train_predict_low.data.cpu().numpy()
+#     data_predict_high = train_predict_high.data.cpu().numpy()
+#     dataY_plot = dataY.data.cpu().numpy()
+#
+#     data_predict_low = sc.inverse_transform(data_predict_low)
+#     data_predict_high = sc.inverse_transform(data_predict_high)
+#     dataY_plot = sc.inverse_transform(dataY_plot)
+#
+#     plt.plot(data_predict_high, color='blue', label='high quantile')
+#     plt.plot(dataY_plot, color='green', label='origin')
+#     plt.plot(data_predict_low, color='red', label='low quantile')
+#     plt.suptitle('Time-Series Prediction Train, column name: {}'.format(col))
+#     plt.legend()
+#     plt.show()
 
-folder = os.path.exists('web/trained_model/' + ip)
-if not folder:
-    os.makedirs('web/trained_model/' + ip)
-# influx读取数据
-import influxdb_client
+import numpy as np
 
-bucket = "monitor"
-org = "seu"
-token = "gZTu3-P2pKcGQI-wBgHUT1nRIckb7N_drF-r9YKUdbszy1hTrN3BwIR5CdFHshzGcW81n_SbjfI5-RQsUz11zA=="
-url = "http://101.35.159.221:8086"
-client = influxdb_client.InfluxDBClient(url=url, token=token, org=org)
-query_api = client.query_api()
-flux = 'from(bucket: "monitor")|> range(start: -1h)|> filter(fn: (r) => r["_measurement"] == "cpu2" or r[' \
-       '"_measurement"] == "disk" or r["_measurement"] == "memory" or r["_measurement"] == "net")|> filter(fn: (r) => ' \
-       'r["address"] == "http://1.15.117.64:8081")|> drop(columns: ["result", "address", "_measurement", "_start", ' \
-       '"_stop"])|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value") '
-# 3天数据量大概要半分钟
-df_result = query_api.query_data_frame(flux)
-df_result.to_csv('monitor.csv', index=False)
-df = pd.read_csv('monitor.csv')
-df = df.drop(['result', 'table'], axis=1)
-df["_time"] = pd.to_datetime(df['_time'])
-# df["_time"] = df["_time"].astype('int64')
-df.index = df['_time']
-df = df.resample('30S').mean()
-df = df.interpolate(method='linear')
-print(df.columns)
-
-import torch
-import pandas as pd
-import matplotlib.pyplot as plt
-from Q_LSTM import LSTM
-from torch.autograd import Variable
-from sklearn.preprocessing import MinMaxScaler
-from utils import sliding_windows, quantile_loss, get_device
-from eval_methods import *
-
-seq_length = 4
-cols = df.columns
-for idx in range(len(cols)):
-    col = cols[idx]
-    training_set = df[col].to_frame()
-    training_set = training_set.iloc[:, 0:1].values
-    sc = MinMaxScaler()
-    training_data = sc.fit_transform(training_set)
-
-    x, y = sliding_windows(training_data, seq_length)
-    dataX = Variable(torch.Tensor(np.array(x)))
-    dataY = Variable(torch.Tensor(np.array(y)))
-
-    # 超参
-    num_epochs = 2000
-    learning_rate = 0.01
-    input_size = 1
-    hidden_size = 2
-    num_layers = 1
-    num_classes = 1
-
-    lstm = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
-    # 将模型转移到指定设备上
-    device = get_device()
-    lstm = lstm.to(device)
-    dataX = dataX.to(device)
-    dataY = dataY.to(device)
-    optimizer = torch.optim.Adam(lstm.parameters(), lr=learning_rate)
-    # Train the model
-    for epoch in range(num_epochs):
-        output_low, output_high = lstm(dataX)
-        optimizer.zero_grad()
-
-        # obtain the loss function
-        loss_low = torch.sum(quantile_loss(0.01, dataY, output_low), dim=0)
-        loss_high = torch.sum(quantile_loss(0.99, dataY, output_high), dim=0)
-        loss = loss_low + loss_high
-        loss.backward()
-        optimizer.step()
-        if epoch % 100 == 0:
-            print("Epoch: %d, loss: %1.5f" % (epoch, loss.item()))
-    torch.save(lstm.state_dict(), 'web/trained_model/' + ip + '/model_{}'.format(col))
-
-    # 可视化结果
-    lstm.eval()
-    train_predict_low, train_predict_high = lstm(dataX)
-
-    data_predict_low = train_predict_low.data.cpu().numpy()
-    data_predict_high = train_predict_high.data.cpu().numpy()
-    dataY_plot = dataY.data.cpu().numpy()
-
-    data_predict_low = sc.inverse_transform(data_predict_low)
-    data_predict_high = sc.inverse_transform(data_predict_high)
-    dataY_plot = sc.inverse_transform(dataY_plot)
-
-    plt.plot(data_predict_high, color='blue', label='high quantile')
-    plt.plot(dataY_plot, color='green', label='origin')
-    plt.plot(data_predict_low, color='red', label='low quantile')
-    plt.suptitle('Time-Series Prediction Train, column name: {}'.format(col))
-    plt.legend()
-    plt.show()
+list = []
+for i in range(10):
+    b = np.array([[i, i], [i, i]])
+    list.append(b)
+# a = np.array(list)
+for i in range(len(list) - 1):
+    if i == 0:
+        c = np.concatenate((list[i], list[i + 1]), axis=0)
+    else:
+        c = np.concatenate((c, list[i + 1]), axis=0)
 
 pass
