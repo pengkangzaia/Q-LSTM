@@ -44,10 +44,8 @@ class TPA(nn.Module):
         hs, (ht, _) = self.lstm(px)
         ht = ht[-1]
         final_h = self.att(hs, ht)
-        out_low = self.out_proj_low(final_h)
-        out_high = self.out_proj_high(final_h)
-        # out_low = self.out_proj_low(final_h) + self.ar(x[:, -self.ar_len:].transpose(1, 2))[:, :, 0]
-        # out_high = self.out_proj_high(final_h) + self.ar(x[:, -self.ar_len:].transpose(1, 2))[:, :, 0]
+        out_low = self.out_proj_low(final_h) + self.ar(x[:, -self.ar_len:].transpose(1, 2))[:, :, 0]
+        out_high = self.out_proj_high(final_h) + self.ar(x[:, -self.ar_len:].transpose(1, 2))[:, :, 0]
         # out_low = self.fc_low(out)
         # out_high = self.fc_high(out)
         return out_low, out_high
