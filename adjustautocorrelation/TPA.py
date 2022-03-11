@@ -34,8 +34,8 @@ class TPA(nn.Module):
         self.ar = nn.Linear(ar_len, 1)
 
         self.ar_len = ar_len
-        self.fc_low = nn.Linear(hidden_size, input_size)
-        self.fc_high = nn.Linear(hidden_size, input_size)
+        self.fc_low = nn.Linear(input_size, input_size)
+        self.fc_high = nn.Linear(input_size, input_size)
 
     def forward(self, x):
         # batch_size, seq_len, input_size = x.size()

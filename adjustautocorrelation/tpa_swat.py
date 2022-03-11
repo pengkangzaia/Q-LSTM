@@ -15,9 +15,6 @@ from SwatDataset import SwatDataset
 torch.set_default_tensor_type(torch.DoubleTensor)
 
 
-
-
-
 def train_swat(seq_length: int = 60, nrows: int = 100):
     training_set = pd.read_csv('../data/swat/SWaT_Dataset_Normal_v1.csv', nrows=nrows, index_col="Timestamp")
     training_set = training_set.drop(["Normal/Attack"], axis=1)
@@ -33,18 +30,18 @@ def train_swat(seq_length: int = 60, nrows: int = 100):
     input_size = training_set.shape[1]
     hidden_size = 64
     num_layers = 1
-    seq_length = 60
     ar_len = 24
 
     model = TPA(seq_length, hidden_size, num_layers, ar_len, input_size)
     dataset = SwatDataset(training_data, seq_length)
-    dataLoader = DataLoader(dataset=dataset, batch_size=1000, num_workers=4)
+    dataLoader = DataLoader(dataset=dataset, batch_size=1000, num_workers=0)
     # 将模型转移到指定设备上
     device = get_device()
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     # Train the model
     for epoch in range(num_epochs):
+        loss_sum = 0
         for i, (dataX, dataY) in enumerate(dataLoader):
             dataX = dataX.to(device)
             dataY = dataY.to(device)
@@ -56,33 +53,36 @@ def train_swat(seq_length: int = 60, nrows: int = 100):
             loss_low = torch.sum(quantile_loss(0.01, dataY, output_low), dim=0)
             loss_high = torch.sum(quantile_loss(0.99, dataY, output_high), dim=0)
             loss = loss_low + loss_high
+            loss_sum += loss.item()
             loss.backward()
             optimizer.step()
-            if epoch % 100 == 0:
-                print("Epoch: %d, loss: %1.5f" % (epoch, loss.item()))
+        # if epoch % 100 == 0:
+        print("Epoch: %d, loss: %1.5f" % (epoch, loss_sum))
     torch.save(model.state_dict(), 'model/swat_tpa')
 
     # 可视化结果
     model.eval()
-    x, y = sliding_windows(training_data, seq_length)
-    dataX = Variable(torch.Tensor(np.array(x)))
-    dataY = Variable(torch.Tensor(np.array(y)))
-    train_predict_low, train_predict_high = model(dataX)
+    dataLoader = DataLoader(dataset=dataset, batch_size=100000, num_workers=0)
+    for i, (dataX, dataY) in enumerate(dataLoader):
+        # x, y = sliding_windows(training_data, seq_length)
+        # dataX = Variable(torch.Tensor(np.array(x)))
+        # dataY = Variable(torch.Tensor(np.array(y)))
+        train_predict_low, train_predict_high = model(dataX)
 
-    data_predict_low = train_predict_low.data.cpu().numpy()
-    data_predict_high = train_predict_high.data.cpu().numpy()
-    dataY_plot = dataY.data.cpu().numpy()
+        data_predict_low = train_predict_low.data.cpu().numpy()
+        data_predict_high = train_predict_high.data.cpu().numpy()
+        dataY_plot = dataY.data.cpu().numpy()
 
-    data_predict_low = sc.inverse_transform(data_predict_low)
-    data_predict_high = sc.inverse_transform(data_predict_high)
-    dataY_plot = sc.inverse_transform(dataY_plot)
-    for col in range(training_set.shape[1]):
-        plt.plot(data_predict_high[:, col], color='blue', label='high quantile')
-        plt.plot(dataY_plot[:, col], color='green', label='origin')
-        plt.plot(data_predict_low[:, col], color='red', label='low quantile')
-        plt.suptitle('Time-Series Prediction Train, column name: {}'.format(col))
-        plt.legend()
-        plt.show()
+        data_predict_low = sc.inverse_transform(data_predict_low)
+        data_predict_high = sc.inverse_transform(data_predict_high)
+        dataY_plot = sc.inverse_transform(dataY_plot)
+        for col in range(training_set.shape[1]):
+            plt.plot(data_predict_high[:, col], color='blue', label='high quantile')
+            plt.plot(dataY_plot[:, col], color='green', label='origin')
+            plt.plot(data_predict_low[:, col], color='red', label='low quantile')
+            plt.suptitle('Time-Series Prediction Train, column name: {}'.format(col))
+            plt.legend()
+            plt.show()
 
 
 def get_labels(seq_length: int = 4, nrows: int = 1000):
@@ -152,6 +152,5 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
 
 
 if __name__ == '__main__':
-    seq_length = 60
-    train_swat(seq_length, nrows=1000)
+    train_swat(seq_length=60, nrows=2000)
     # test_swat(seeq_length, nrows=1000)
