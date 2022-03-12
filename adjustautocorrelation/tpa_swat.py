@@ -94,6 +94,15 @@ def get_labels(seq_length: int = 4, nrows: int = 1000):
     return l
 
 
+def cat(mlist):
+    for i in range(len(mlist) - 1):
+        if i == 0:
+            c = np.concatenate((mlist[i], mlist[i + 1]), axis=0)
+        else:
+            c = np.concatenate((c, mlist[i + 1]), axis=0)
+    return c
+
+
 def test_swat(seq_length: int = 4, nrows: int = 1000):
     l = get_labels(seq_length=seq_length + 1, nrows=nrows)
     testing_set = pd.read_csv('../data/swat/SWaT_Dataset_Attack_v0.csv', sep=';', nrows=nrows, index_col="Timestamp")
@@ -106,11 +115,11 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     testing_data = sc.fit_transform(testing_set)
 
     dataset = SwatDataset(testing_data, seq_length)
-    dataLoader = DataLoader(dataset=dataset, batch_size=10000, num_workers=0)
+    dataLoader = DataLoader(dataset=dataset, batch_size=5000, num_workers=0)
     input_size = testing_set.shape[1]
     hidden_size = 64
     num_layers = 1
-    ar_len = 24
+    ar_len = 2
 
     model = TPA(seq_length, hidden_size, num_layers, ar_len, input_size)
     if torch.cuda.is_available():
@@ -120,6 +129,10 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     model.eval()
     device = get_device()
     model = model.to(device)
+    total_x = []
+    total_y = []
+    total_low = []
+    total_high = []
     for _, (dataX, dataY) in enumerate(dataLoader):
         dataX = dataX.to(device)
         dataY = dataY.to(device)
@@ -128,29 +141,38 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
         data_predict_low = test_predict_low.data.cpu().numpy()
         data_predict_high = test_predict_high.data.cpu().numpy()
         dataY_plot = dataY.data.cpu().numpy()
-        a = dataX.shape[2]
-        print(a)
-        for i in range(dataX.shape[2]):
-            plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
-            plt.plot(dataY_plot[:, i], color='green', label='origin')
-            plt.plot(data_predict_low[:, i], color='red', label='low quantile')
-            plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
-            plt.legend()
-            # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
-            plt.show()
+        total_y.append(dataY_plot)
+        total_low.append(data_predict_low)
+        total_high.append(data_predict_high)
+    total_y = np.array(total_y)
+    total_low = np.array(total_low)
+    total_high = np.array(total_high)
+    dataY_plot = cat(total_y)
+    data_predict_low = cat(total_low)
+    data_predict_high = cat(total_high)
+    # for i in range(dataX.shape[2]):
+    #     plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
+    #     plt.plot(dataY_plot[:, i], color='green', label='origin')
+    #     plt.plot(data_predict_low[:, i], color='red', label='low quantile')
+    #     plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
+    #     plt.legend()
+    #     # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
+    #     plt.show()
 
-        abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
-        final_res = np.mean(abnormal, axis=1)  # 每个样本获取到的异常分数
-        final_res = np.where(final_res > 0.5, 1, 0)
-        same = 0
-        for i in range(len(l)):
-            if final_res[i] == l[i]:
-                same += 1
-        print('按每个维度投票之后的准确率值: ' + str(same / len(l)))
-        t, th = bf_search(np.mean(abnormal, axis=1), l, start=0., end=0.9, step_num=int((0.9 - 0.) / 0.001),
-                          display_freq=100)
+    abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
+    final_res = np.mean(abnormal, axis=1)  # 每个样本获取到的异常分数
+    final_res = np.where(final_res > 0.5, 1, 0)
+    same = 0
+    print(len(l))
+    print(len(final_res))
+    for i in range(len(l)):
+        if final_res[i] == l[i]:
+            same += 1
+    print('按每个维度投票之后的准确率值: ' + str(same / len(l)))
+    t, th = bf_search(np.mean(abnormal, axis=1), l, start=0., end=0.5, step_num=int((0.5 - 0.) / 0.0001),
+                      display_freq=100)
 
 
 if __name__ == '__main__':
-    train_swat(seq_length=60, nrows=2000)
-    # test_swat(seq_length=60, nrows=1000)
+    # train_swat(seq_length=60, nrows=2000)
+    test_swat(seq_length=4, nrows=None)
