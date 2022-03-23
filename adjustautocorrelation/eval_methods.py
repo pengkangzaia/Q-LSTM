@@ -120,3 +120,42 @@ def bf_search(score, label, start, end=None, step_num=1, display_freq=1, verbose
             print("cur thr: ", threshold, target, m, m_t, m_90, m_t_90)
     print(m, m_t, m_90, m_t_90)
     return m, m_t
+
+def bf_search1(score, label, start, end=None, step_num=1, display_freq=1, verbose=True, direction='>'):
+    """
+    Find the best-f1 score by searching best `threshold` in [`start`, `end`).
+
+
+    Returns:
+        list: list for results
+        float: the `threshold` for best-f1
+    """
+    if step_num is None or end is None:
+        end = start
+        step_num = 1
+    search_step, search_range, search_lower_bound = step_num, end - start, start
+    if verbose:
+        print("search range: ", search_lower_bound, search_lower_bound + search_range)
+    threshold = search_lower_bound
+    m = (-1., -1., -1.)
+    m_t = 0.0
+    m_90 = (-1., -1., -1.)
+    m_t_90 = 0.0
+    thr_list = []
+    res_list = []
+    for i in range(search_step):
+        threshold += search_range / float(search_step)
+        pred = eval('score{}threshold'.format(direction))
+        target = calc_seq(score, label, threshold, pred=pred, calc_latency=True)
+        if target[0] > m[0]:
+            m_t = threshold
+            m = target
+        if target[3] <= 0.1 and target[0] > m_90[0]:
+            m_t_90 = threshold
+            m_90 = target
+        if verbose and i % display_freq == 0:
+            print("cur thr: ", threshold, target, m, m_t, m_90, m_t_90)
+        thr_list.append(threshold)
+        res_list.append(target)
+    print(m, m_t, m_90, m_t_90)
+    return m, m_t, thr_list, res_list
