@@ -11,7 +11,7 @@ import torch.cuda
 
 # swat test 449919 train 495000
 # 87841 test
-# df = pd.read_csv('data/psm/test.csv')
+# df = pd.read_csv('data/psm/test_wadi.csv')
 # shape = df.shape
 # pass
 # a = torch.cuda.is_available()
@@ -254,17 +254,77 @@ from sklearn.preprocessing import MinMaxScaler
 #     plt.legend()
 #     plt.show()
 
-import numpy as np
+# import numpy as np
+#
+# list = []
+# for i in range(10):
+#     b = np.array([[i, i], [i, i]])
+#     list.append(b)
+# # a = np.array(list)
+# for i in range(len(list) - 1):
+#     if i == 0:
+#         c = np.concatenate((list[i], list[i + 1]), axis=0)
+#     else:
+#         c = np.concatenate((c, list[i + 1]), axis=0)
 
-list = []
-for i in range(10):
-    b = np.array([[i, i], [i, i]])
-    list.append(b)
-# a = np.array(list)
-for i in range(len(list) - 1):
-    if i == 0:
-        c = np.concatenate((list[i], list[i + 1]), axis=0)
-    else:
-        c = np.concatenate((c, list[i + 1]), axis=0)
+# import numpy as np
+#
+# a = np.array([1, 2, 3, 4])
+# b = np.where(a > 1, 1, 0)
 
+# num = 0.9926117436549251 + 0.801801789762736 +0.8756157527633528+0.8109517495312679+0.9374998535156478+0.9972565130390767+0.9927935523832405+0.8972430965257757+0.9489130331639888+0.985517481506473+0.9958332918402795+0.8367+0.9433962+0.5870535583246+0.97084545+0.9999+0.95536199+0.8719211393+0.988671462+0.9923517974+0.9896670380+0.9024389968768+0.7663551342+0.98614316429+0.993437235+0.9999999+0.93577980792+0.99999994
+# a = num/29
+# print(num/28)
+# num1 = 0.997+0.985+0.87+0.86+0.60+0.98+0.9766+0.9384+0.7461+0.9848+0.88+0.9893+0.9183+0.62+0.79856+0.99+0.99+0.57+0.86+0.21+0.88+0.6948+0.823+0.9838+0.88+0.99+0.97+0.969
+# b = num1 / 28
+# print(num1/28)
+# print(2*a*b/(a+b))
+
+# training_set = pd.read_csv('./data/wadi/WADI_14days.csv', skiprows=4, nrows=None, index_col=0)
+# training_set = training_set.dropna(axis=1, how='all')
+# training_set = training_set.drop(['Date', 'Time'], axis=1)
+# # for i in list(training_set):
+# #     training_set[i] = training_set[i].fillna(0.0, inplace=True)
+# training_set = training_set.astype(float)
+# training_set.to_csv('./train_wadi.csv', index=True)
+
+
+# testing_set = pd.read_csv('./data/wadi/WADI_attackdata.csv', nrows=None, index_col=0)
+# testing_set = testing_set.dropna(axis=1, how='all')
+# testing_set = testing_set.drop(['Date', 'Time'], axis=1)
+# for i in list(testing_set):
+#     testing_set[i].fillna(0, inplace=True)
+# testing_set = testing_set.astype(float)
+# testing_set.to_csv('./test_wadi.csv', index=True)
+# import time
+# from datetime import datetime
+# import pandas as pd
+# testing_set = pd.read_csv('./data/wadi/WADI_attackdata.csv', usecols=['Date', 'Time'], nrows=None)
+# testing_set['Timestamp'] = testing_set['Date'] + " " + testing_set['Time']
+# testing_set["Timestamp"] = pd.to_datetime(testing_set["Timestamp"], format="%m/%d/%Y %I:%M:%S.000 %p")
+# testing_set["unix"] = testing_set["Timestamp"].astype(np.int64)
+# abnormal_range = [['9/10/17 19:25:00', '9/10/17 19:50:16'], ['10/10/17 10:24:10', '10/10/17 10:34:00'],
+#                   ['10/10/17 10:55:00', '10/10/17 11:24:00'], ['10/10/17 11:30:40', '10/10/17 11:44:50'],
+#                   ['10/10/17 13:39:30', '10/10/17 13:50:40'], ['10/10/17 14:48:17', '10/10/17 14:59:55'],
+#                   ['10/10/17 17:40:00', '10/10/17 17:49:40'], ['10/10/17 10:55:00', '10/10/17 10:56:27'],
+#                   ['11/10/17 11:17:54', '11/10/17 11:31:20'], ['11/10/17 11:36:31', '11/10/17 11:47:00'],
+#                   ['11/10/17 11:59:00', '11/10/17 12:05:00'], ['11/10/17 12:07:30', '11/10/17 12:10:52'],
+#                   ['11/10/17 12:16:00', '11/10/17 12:25:36'], ['11/10/17 15:26:30', '11/10/17 15:37:00']]
+# labels = np.zeros(testing_set.shape[0])
+# for i in range(len(abnormal_range)):
+#     start = datetime.strptime(abnormal_range[i][0], "%d/%m/%y %H:%M:%S")
+#     # 手动设置时区为东八区
+#     start_timestamp = (int(time.mktime(start.timetuple())) + (8 * 60 * 60)) * (10 ** 9)
+#
+#     end = datetime.strptime(abnormal_range[i][1], "%d/%m/%y %H:%M:%S")
+#     end_timestamp = (int(time.mktime(end.timetuple())) + (8 * 60 * 60)) * (10 ** 9)
+#
+#     abnormal = testing_set[(testing_set['unix'] >= start_timestamp) & (testing_set['unix'] <= end_timestamp)]
+#     abnormal_idx = abnormal.index
+#     labels[abnormal_idx] = 1
+# # array转dataframe
+# padding = np.zeros(1)
+# labels = np.append(padding, labels)
+# labels = pd.DataFrame(labels)
+# labels.to_csv('test_label_wadi.csv', index=True)
 pass

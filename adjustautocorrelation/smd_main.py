@@ -156,4 +156,4 @@ def test_smd_for_entity(entity_id: str, seq_length: int = 4, nrows: int = 1000):
 
 
 if __name__ == '__main__':
-    test_smd_for_all_entity(4, 100)
+    test_smd_for_all_entity(4, None)

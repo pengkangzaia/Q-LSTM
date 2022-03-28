@@ -74,7 +74,7 @@ def train_swat(seq_length: int = 4, nrows: int = 100):
         plt.plot(data_predict_high, color='blue', label='high quantile')
         plt.plot(dataY_plot, color='green', label='origin')
         plt.plot(data_predict_low, color='red', label='low quantile')
-        plt.suptitle('Time-Series Prediction Train, column name: {}'.format(col))
+        # plt.suptitle('Time-Series Prediction Train, column name: {}'.format(col))
         plt.legend()
         plt.show()
 
@@ -92,56 +92,57 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     abnormals = []
     l = get_labels(seq_length=seq_length, nrows=nrows)
     for idx in range(len(swat_columns)):
-        col = swat_columns[idx]
-        testing_set = pd.read_csv('data/swat/SWaT_Dataset_Attack_v0.csv', usecols=[col, 'Normal/Attack'], sep=';', nrows=nrows)
-        testing_set[col] = testing_set[col].apply(lambda x: str(x).replace(",", "."))
-        testing_set = testing_set.iloc[:, 0:1]
-        testing_set = testing_set.astype(float)
-        testing_set = testing_set.values
-        sc = MinMaxScaler()
-        testing_data = sc.fit_transform(testing_set)
+        if idx == 29:
+            col = swat_columns[idx]
+            testing_set = pd.read_csv('data/swat/SWaT_Dataset_Attack_v0.csv', usecols=[col, 'Normal/Attack'], sep=';', nrows=nrows)
+            testing_set[col] = testing_set[col].apply(lambda x: str(x).replace(",", "."))
+            testing_set = testing_set.iloc[:, 0:1]
+            testing_set = testing_set.astype(float)
+            testing_set = testing_set.values
+            sc = MinMaxScaler()
+            testing_data = sc.fit_transform(testing_set)
 
-        x, y = sliding_windows(testing_data, seq_length)
-        dataX = Variable(torch.Tensor(np.array(x)))
-        dataY = Variable(torch.Tensor(np.array(y)))
-        test_size = len(y)
+            x, y = sliding_windows(testing_data, seq_length)
+            dataX = Variable(torch.Tensor(np.array(x)))
+            dataY = Variable(torch.Tensor(np.array(y)))
+            test_size = len(y)
 
-        # 参数
-        input_size = 1
-        hidden_size = 2
-        num_layers = 1
-        num_classes = 1
-        model = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
-        if torch.cuda.is_available():
-            model.load_state_dict(torch.load('trained_model/swat/saved_model{}'.format(idx)))
-        else:
-            model.load_state_dict(torch.load('trained_model/swat/saved_model{}'.format(idx), map_location=torch.device('cpu')))
-        model.eval()
-        device = get_device()
-        model = model.to(device)
-        dataX = dataX.to(device)
-        dataY = dataY.to(device)
-        test_predict_low, test_predict_high = model(dataX)
+            # 参数
+            input_size = 1
+            hidden_size = 2
+            num_layers = 1
+            num_classes = 1
+            model = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
+            if torch.cuda.is_available():
+                model.load_state_dict(torch.load('trained_model/swat/saved_model{}'.format(idx)))
+            else:
+                model.load_state_dict(torch.load('trained_model/swat/saved_model{}'.format(idx), map_location=torch.device('cpu')))
+            model.eval()
+            device = get_device()
+            model = model.to(device)
+            dataX = dataX.to(device)
+            dataY = dataY.to(device)
+            test_predict_low, test_predict_high = model(dataX)
 
-        data_predict_low = test_predict_low.data.cpu().numpy()
-        data_predict_high = test_predict_high.data.cpu().numpy()
-        dataY_plot = dataY.data.cpu().numpy()
-        plt.plot(data_predict_high, color='blue', label='high quantile')
-        plt.plot(dataY_plot, color='green', label='origin')
-        plt.plot(data_predict_low, color='red', label='low quantile')
-        plt.suptitle('Time-Series Prediction Test, column name: {}'.format(col))
-        plt.legend()
-        plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
-        plt.show()
+            data_predict_low = test_predict_low.data.cpu().numpy()
+            data_predict_high = test_predict_high.data.cpu().numpy()
+            dataY_plot = dataY.data.cpu().numpy()
+            plt.plot(data_predict_high, color='blue', label='high quantile')
+            plt.plot(dataY_plot, color='green', label='origin')
+            plt.plot(data_predict_low, color='red', label='low quantile')
+            # plt.suptitle('Time-Series Prediction Test, column name: {}'.format(col))
+            plt.legend()
+            plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
+            plt.show()
 
-        abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
-        abnormal = np.squeeze(abnormal, axis=1)
-        same = 0
-        for i in range(test_size):
-            if abnormal[i] == l[i]:
-                same += 1
-        abnormal_rates.append(same / test_size)
-        abnormals.append(abnormal)
+            abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
+            abnormal = np.squeeze(abnormal, axis=1)
+            same = 0
+            for i in range(test_size):
+                if abnormal[i] == l[i]:
+                    same += 1
+            abnormal_rates.append(same / test_size)
+            abnormals.append(abnormal)
     print('预测正确率:' + str(abnormal_rates))
     avg_rate = np.array(abnormal_rates).mean()
     print('预测平均正确率: ' + str(avg_rate))

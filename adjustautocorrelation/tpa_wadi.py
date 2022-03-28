@@ -131,7 +131,7 @@ def test_wadi(seq_length: int = 4, nrows: int = 1000):
     testing_set = testing_set.dropna(axis=1, how='all')
     testing_set = testing_set.drop(['Date', 'Time'], axis=1)
     for i in list(testing_set):
-        testing_set[i] = testing_set[i].fillna(0, inplace=True)
+        testing_set[i].fillna(0, inplace=True)
     testing_set = testing_set.astype(float)
     testing_set = testing_set.values
     sc = MinMaxScaler()
@@ -140,7 +140,7 @@ def test_wadi(seq_length: int = 4, nrows: int = 1000):
     dataset = SwatDataset(testing_data, seq_length)
     dataLoader = DataLoader(dataset=dataset, batch_size=5000, num_workers=0)
     input_size = testing_set.shape[1]
-    hidden_size = 64
+    hidden_size = 168
     num_layers = 1
     ar_len = 2
 
@@ -174,13 +174,14 @@ def test_wadi(seq_length: int = 4, nrows: int = 1000):
     data_predict_low = cat(total_low)
     data_predict_high = cat(total_high)
     for i in range(dataX.shape[2]):
-        plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
-        plt.plot(dataY_plot[:, i], color='green', label='origin')
-        plt.plot(data_predict_low[:, i], color='red', label='low quantile')
-        plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
-        plt.legend()
-        # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
-        plt.show()
+        if 15 <= i <= 35:
+            plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
+            plt.plot(dataY_plot[:, i], color='green', label='origin')
+            plt.plot(data_predict_low[:, i], color='red', label='low quantile')
+            # plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
+            plt.legend()
+            # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
+            plt.show()
 
     abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
     final_res = np.mean(abnormal, axis=1)  # 每个样本获取到的异常分数
@@ -198,5 +199,5 @@ def test_wadi(seq_length: int = 4, nrows: int = 1000):
 
 if __name__ == '__main__':
   # pass
-    train_wadi(seq_length=4, nrows=1000)
-    # test_wadi(seq_length=4, nrows=None)
+  #   train_wadi(seq_length=4, nrows=1000)
+    test_wadi(seq_length=4, nrows=None)

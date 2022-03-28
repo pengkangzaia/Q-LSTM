@@ -128,9 +128,9 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     num_classes = testing_set.shape[1]
     model = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
     if torch.cuda.is_available():
-        model.load_state_dict(torch.load('model/swat'))
+        model.load_state_dict(torch.load('model/swat_tpa_noconv'))
     else:
-        model.load_state_dict(torch.load('model/swat', map_location=torch.device('cpu')))
+        model.load_state_dict(torch.load('model/swat_tpa_noconv', map_location=torch.device('cpu')))
     model.eval()
     device = get_device()
     model = model.to(device)
@@ -142,13 +142,14 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     data_predict_high = test_predict_high.data.cpu().numpy()
     dataY_plot = dataY.data.cpu().numpy()
     for i in range(dataX.shape[1]):
-        plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
-        plt.plot(dataY_plot[:, i], color='green', label='origin')
-        plt.plot(data_predict_low[:, i], color='red', label='low quantile')
-        plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
-        plt.legend()
-        # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
-        plt.show()
+        if i == 29:
+            plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
+            plt.plot(dataY_plot[:, i], color='green', label='origin')
+            plt.plot(data_predict_low[:, i], color='red', label='low quantile')
+            # plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
+            plt.legend()
+            # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
+            plt.show()
 
     abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
     final_res = np.mean(abnormal, axis=1)
@@ -162,5 +163,5 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
                       display_freq=100)
 
 
-train_swat(4, nrows=100)
-# test_swat(4, nrows=None)
+# train_swat(4, nrows=100)
+test_swat(4, nrows=None)

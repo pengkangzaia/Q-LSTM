@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import torch
 from sklearn.preprocessing import MinMaxScaler
@@ -25,12 +26,12 @@ def train_swat(seq_length: int = 60, nrows: int = 100):
     training_data = sc.fit_transform(training_set)
 
     # 超参
-    num_epochs = 10
+    num_epochs = 200
     learning_rate = 0.01
     input_size = training_set.shape[1]
     hidden_size = 64
     num_layers = 1
-    ar_len = 24
+    ar_len = 2
 
     model = TPA(seq_length, hidden_size, num_layers, ar_len, input_size)
     dataset = SwatDataset(training_data, seq_length)
@@ -95,6 +96,8 @@ def get_labels(seq_length: int = 4, nrows: int = 1000):
 
 
 def cat(mlist):
+    if len(mlist) == 1:
+        return np.squeeze(mlist)
     for i in range(len(mlist) - 1):
         if i == 0:
             c = np.concatenate((mlist[i], mlist[i + 1]), axis=0)
@@ -119,13 +122,13 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     input_size = testing_set.shape[1]
     hidden_size = 64
     num_layers = 1
-    ar_len = 2
+    ar_len = 24
 
     model = TPA(seq_length, hidden_size, num_layers, ar_len, input_size)
     if torch.cuda.is_available():
-        model.load_state_dict(torch.load('model/swat_tpa'))
+        model.load_state_dict(torch.load('model/swat_tpa_noconv'))
     else:
-        model.load_state_dict(torch.load('model/swat_tpa', map_location=torch.device('cpu')))
+        model.load_state_dict(torch.load('model/swat_tpa_noconv', map_location=torch.device('cpu')))
     model.eval()
     device = get_device()
     model = model.to(device)
@@ -150,14 +153,15 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
     dataY_plot = cat(total_y)
     data_predict_low = cat(total_low)
     data_predict_high = cat(total_high)
-    # for i in range(dataX.shape[2]):
-    #     plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
-    #     plt.plot(dataY_plot[:, i], color='green', label='origin')
-    #     plt.plot(data_predict_low[:, i], color='red', label='low quantile')
-    #     plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
-    #     plt.legend()
-    #     # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
-    #     plt.show()
+    for i in range(dataX.shape[2]):
+        if i == 29:
+            plt.plot(data_predict_high[:, i], color='blue', label='high quantile')
+            plt.plot(dataY_plot[:, i], color='green', label='origin')
+            plt.plot(data_predict_low[:, i], color='red', label='low quantile')
+            # plt.suptitle('Time-Series Prediction Test, column name: {}'.format(i))
+            plt.legend()
+            # plt.savefig('saved_fig/swat/swat_pred{}'.format(idx))
+            plt.show()
 
     abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
     final_res = np.mean(abnormal, axis=1)  # 每个样本获取到的异常分数
@@ -169,10 +173,9 @@ def test_swat(seq_length: int = 4, nrows: int = 1000):
         if final_res[i] == l[i]:
             same += 1
     print('按每个维度投票之后的准确率值: ' + str(same / len(l)))
-    t, th = bf_search(np.mean(abnormal, axis=1), l, start=0., end=0.5, step_num=int((0.5 - 0.) / 0.0001),
-                      display_freq=100)
+    t, th = bf_search(np.mean(abnormal, axis=1), l, start=0., end=0.5, step_num=int((0.9 - 0.) / 0.0001), display_freq=100)
 
 
 if __name__ == '__main__':
-    # train_swat(seq_length=60, nrows=2000)
-    test_swat(seq_length=4, nrows=None)
+    # train_swat(seq_length=4, nrows=2000)
+    test_swat(seq_length=60, nrows=None)
