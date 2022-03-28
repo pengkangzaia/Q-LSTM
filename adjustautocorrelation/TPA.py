@@ -10,13 +10,15 @@ class TPA_Attention(nn.Module):
         self.n_filters = 32
         self.filter_size = 1
         self.conv = nn.Conv2d(1, self.n_filters, (seq_length, self.filter_size))
-        self.Wa = nn.Parameter(torch.rand(self.n_filters, hidden_size))
-        self.Whv = nn.Linear(self.n_filters + hidden_size, hidden_size)
+        # self.Wa = nn.Parameter(torch.rand(self.n_filters, hidden_size))
+        self.Wa = nn.Parameter(torch.rand(seq_length, hidden_size))
+        self.Whv = nn.Linear(seq_length + hidden_size, hidden_size)
 
     def forward(self, hs, ht):
-        hs = hs.unsqueeze(1)
-        H = self.conv(hs)[:, :, 0]  # B x n_filters x hidden_size
-        H = H.transpose(1, 2)
+        # hs = hs.unsqueeze(1)
+        # H = self.conv(hs)[:, :, 0]  # B x n_filters x hidden_size
+        # H = H.transpose(1, 2)
+        H = hs.transpose(1, 2)
         alpha = torch.sigmoid(torch.sum((H @ self.Wa) * ht.unsqueeze(-1), dim=-1))  # B x hidden_size
         V = torch.sum(H * alpha.unsqueeze(-1), dim=1)  # B x n_filters
         vh = torch.cat([V, ht], dim=1)
