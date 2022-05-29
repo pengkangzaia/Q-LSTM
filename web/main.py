@@ -1,3 +1,4 @@
+import json
 import os
 
 import influxdb_client
@@ -10,6 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 from Q_LSTM import *
 from eval_methods import *
 from utils import sliding_windows, quantile_loss
+from trained_model.response import Response
 
 app = Flask(__name__)
 
@@ -29,50 +31,52 @@ def query_dataframe(flux: str):
 
 @app.route("/pred", methods=["GET"])
 def predict():
-    seq_length = 4
-    ip = request.args.get("ip")
-    flux = 'from(bucket: "monitor")' \
-           '|> range(start: -1d)' \
-           '|> filter(fn: (r) => r["_measurement"] == "cpu2" ' \
-           'or r["_measurement"] == "disk" or r["_measurement"] == "memory" or r["_measurement"] == "net")' \
-           '|> filter(fn: (r) => r["address"] == "http://1.15.117.64:8081")' \
-           '|> sort(columns: ["_time"], desc: true)' \
-           '|> limit(n: 4)' \
-           '|> sort(columns: ["_time"], desc: false)' \
-           '|> drop(columns: ["result", "address", "_measurement", "_start", "_stop"])' \
-           '|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")'
-    df = query_dataframe(flux)
-    df = df.drop(['result', 'table', '_time'], axis=1)
-    cols = df.columns
-    abnormals = []
-    ip = ip.replace(".", "_")
-    for idx in range(len(cols)):
-        col = cols[idx]
-        testing_set = df[col].to_frame()
-        testing_set = testing_set.iloc[:, 0:1].values
-        sc = MinMaxScaler()
-        testing_data = sc.fit_transform(testing_set)
-
-        x, y = sliding_windows(testing_data, seq_length)
-        dataX = Variable(torch.Tensor(np.array(x)))
-        dataY = Variable(torch.Tensor(np.array(y)))
-        model = LSTM(num_classes=1, input_size=1, hidden_size=2, seq_length=seq_length, num_layers=1)
-        model.load_state_dict(
-            torch.load('web/trained_model/' + ip + '/model_{}'.format(col), map_location=torch.device('cpu')))
-        model.eval()
-        test_predict_low, test_predict_high = model(torch.FloatTensor(dataX))
-        data_predict_low = test_predict_low.data.cpu().numpy()
-        data_predict_high = test_predict_high.data.cpu().numpy()
-        dataY_plot = np.array(torch.FloatTensor(dataY))
-        abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
-        abnormal = np.squeeze(abnormal, axis=1)
-        abnormals.append(abnormal)
-    final_res = np.mean(abnormals, axis=0)
-    # 从数据库中取阈值 t
-    t = 0.5
-    final_res = np.where(final_res > t, 1, 0)
-    final_res = np.squeeze(final_res).tolist()
-    return str(final_res)
+    # seq_length = 4
+    # ip = request.args.get("ip")
+    # flux = 'from(bucket: "monitor")' \
+    #        '|> range(start: -1m)' \
+    #        '|> filter(fn: (r) => r["_measurement"] == "cpu2" ' \
+    #        'or r["_measurement"] == "disk" or r["_measurement"] == "memory" or r["_measurement"] == "net")' \
+    #        '|> filter(fn: (r) => r["address"] == "http://1.15.117.64:8081")' \
+    #        '|> sort(columns: ["_time"], desc: true)' \
+    #        '|> limit(n: 4)' \
+    #        '|> sort(columns: ["_time"], desc: false)' \
+    #        '|> drop(columns: ["result", "address", "_measurement", "_start", "_stop"])' \
+    #        '|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")'
+    # df = query_dataframe(flux)
+    # df = df.drop(['result', 'table', '_time'], axis=1)
+    # cols = df.columns
+    # abnormals = []
+    # ip = ip.replace(".", "_")
+    # for idx in range(len(cols)):
+    #     col = cols[idx]
+    #     testing_set = df[col].to_frame()
+    #     testing_set = testing_set.iloc[:, 0:1].values
+    #     sc = MinMaxScaler()
+    #     testing_data = sc.fit_transform(testing_set)
+    #
+    #     x, y = sliding_windows(testing_data, seq_length)
+    #     dataX = Variable(torch.Tensor(np.array(x)))
+    #     dataY = Variable(torch.Tensor(np.array(y)))
+    #     model = LSTM(num_classes=1, input_size=1, hidden_size=2, seq_length=seq_length, num_layers=1)
+    #     model.load_state_dict(
+    #         torch.load('web/trained_model/' + ip + '/model_{}'.format(col), map_location=torch.device('cpu')))
+    #     model.eval()
+    #     test_predict_low, test_predict_high = model(torch.FloatTensor(dataX))
+    #     data_predict_low = test_predict_low.data.cpu().numpy()
+    #     data_predict_high = test_predict_high.data.cpu().numpy()
+    #     dataY_plot = np.array(torch.FloatTensor(dataY))
+    #     abnormal = np.where((dataY_plot < data_predict_low) | (dataY_plot > data_predict_high), 1, 0)
+    #     abnormal = np.squeeze(abnormal, axis=1)
+    #     abnormals.append(abnormal)
+    # final_res = np.mean(abnormals, axis=0)
+    # # 从数据库中取阈值 t
+    # t = 0.5
+    # final_res = np.where(final_res > t, 1, 0)
+    # final_res = np.squeeze(final_res).tolist()
+    res = Response(code=200, data=1)
+    # return str(res)
+    return json.dumps(res.__dict__)
 
 
 @app.route("/train", methods=["GET"])

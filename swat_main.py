@@ -17,66 +17,67 @@ swat_columns = str_cols.split(';')
 
 def train_swat(seq_length: int = 4, nrows: int = 100):
     for idx in range(len(swat_columns)):
-        col = swat_columns[idx]
-        training_set = pd.read_csv('data/swat/SWaT_Dataset_Normal_v1.csv', usecols=[col], nrows=nrows)
-        training_set[col] = training_set[col].apply(lambda x: str(x).replace(",", "."))
-        training_set = training_set.astype(float)
-        training_set = training_set.iloc[:, 0:1].values
-        sc = MinMaxScaler()
-        training_data = sc.fit_transform(training_set)
+        if idx == 29:
+            col = swat_columns[idx]
+            training_set = pd.read_csv('data/swat/SWaT_Dataset_Normal_v1.csv', usecols=[col], nrows=nrows)
+            training_set[col] = training_set[col].apply(lambda x: str(x).replace(",", "."))
+            training_set = training_set.astype(float)
+            training_set = training_set.iloc[:, 0:1].values
+            sc = MinMaxScaler()
+            training_data = sc.fit_transform(training_set)
 
-        x, y = sliding_windows(training_data, seq_length)
-        dataX = Variable(torch.Tensor(np.array(x)))
-        dataY = Variable(torch.Tensor(np.array(y)))
+            x, y = sliding_windows(training_data, seq_length)
+            dataX = Variable(torch.Tensor(np.array(x)))
+            dataY = Variable(torch.Tensor(np.array(y)))
 
-        # 超参
-        num_epochs = 2000
-        learning_rate = 0.01
-        input_size = 1
-        hidden_size = 2
-        num_layers = 1
-        num_classes = 1
+            # 超参
+            num_epochs = 2000
+            learning_rate = 0.01
+            input_size = 1
+            hidden_size = 2
+            num_layers = 1
+            num_classes = 1
 
-        lstm = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
-        # 将模型转移到指定设备上
-        device = get_device()
-        lstm = lstm.to(device)
-        dataX = dataX.to(device)
-        dataY = dataY.to(device)
-        optimizer = torch.optim.Adam(lstm.parameters(), lr=learning_rate)
-        # Train the model
-        for epoch in range(num_epochs):
-            output_low, output_high = lstm(dataX)
-            optimizer.zero_grad()
+            lstm = LSTM(num_classes, input_size, hidden_size, seq_length, num_layers)
+            # 将模型转移到指定设备上
+            device = get_device()
+            lstm = lstm.to(device)
+            dataX = dataX.to(device)
+            dataY = dataY.to(device)
+            optimizer = torch.optim.Adam(lstm.parameters(), lr=learning_rate)
+            # Train the model
+            for epoch in range(num_epochs):
+                output_low, output_high = lstm(dataX)
+                optimizer.zero_grad()
 
-            # obtain the loss function
-            loss_low = torch.sum(quantile_loss(0.01, dataY, output_low), dim=0)
-            loss_high = torch.sum(quantile_loss(0.99, dataY, output_high), dim=0)
-            loss = loss_low + loss_high
-            loss.backward()
-            optimizer.step()
-            if epoch % 100 == 0:
-                print("Epoch: %d, loss: %1.5f" % (epoch, loss.item()))
-        torch.save(lstm.state_dict(), 'trained_model/swat/saved_model{}'.format(idx))
+                # obtain the loss function
+                loss_low = torch.sum(quantile_loss(0.01, dataY, output_low), dim=0)
+                loss_high = torch.sum(quantile_loss(0.99, dataY, output_high), dim=0)
+                loss = loss_low + loss_high
+                loss.backward()
+                optimizer.step()
+                if epoch % 100 == 0:
+                    print("Epoch: %d, loss: %1.5f" % (epoch, loss.item()))
+            torch.save(lstm.state_dict(), 'trained_model/swat/saved_model{}'.format(idx))
 
-        # 可视化结果
-        lstm.eval()
-        train_predict_low, train_predict_high = lstm(dataX)
+            # 可视化结果
+            lstm.eval()
+            train_predict_low, train_predict_high = lstm(dataX)
 
-        data_predict_low = train_predict_low.data.cpu().numpy()
-        data_predict_high = train_predict_high.data.cpu().numpy()
-        dataY_plot = dataY.data.cpu().numpy()
+            data_predict_low = train_predict_low.data.cpu().numpy()
+            data_predict_high = train_predict_high.data.cpu().numpy()
+            dataY_plot = dataY.data.cpu().numpy()
 
-        data_predict_low = sc.inverse_transform(data_predict_low)
-        data_predict_high = sc.inverse_transform(data_predict_high)
-        dataY_plot = sc.inverse_transform(dataY_plot)
+            data_predict_low = sc.inverse_transform(data_predict_low)
+            data_predict_high = sc.inverse_transform(data_predict_high)
+            dataY_plot = sc.inverse_transform(dataY_plot)
 
-        plt.plot(data_predict_high, color='blue', label='high quantile')
-        plt.plot(dataY_plot, color='green', label='origin')
-        plt.plot(data_predict_low, color='red', label='low quantile')
-        # plt.suptitle('Time-Series Prediction Train, column name: {}'.format(col))
-        plt.legend()
-        plt.show()
+            plt.plot(data_predict_high, color='blue', label='high quantile')
+            plt.plot(dataY_plot, color='green', label='origin')
+            plt.plot(data_predict_low, color='red', label='low quantile')
+            # plt.suptitle('Time-Series Prediction Train, column name: {}'.format(col))
+            plt.legend()
+            plt.show()
 
 
 def get_labels(seq_length: int = 4, nrows: int = 1000):

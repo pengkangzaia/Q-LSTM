@@ -327,4 +327,48 @@ from sklearn.preprocessing import MinMaxScaler
 # labels = np.append(padding, labels)
 # labels = pd.DataFrame(labels)
 # labels.to_csv('test_label_wadi.csv', index=True)
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('monitor.csv')
+df = df.drop(columns=['result', 'table'])
+df['_time'] = df['_time'].apply(lambda x: x.split(".", 1)[0])
+df.set_index(['_time'], inplace=True)
+df = df.iloc[:, 0:6]
+df.plot(subplots=True, figsize=(15, 10))
+plt.show()
+# # df1 = pd.read_csv('data/psm/train.csv')
+# df2 = pd.read_csv('data/psm/test.csv')
+# df3 = pd.read_csv('data/psm/test_label.csv')
+# abnormal = df3['label'].sum()
+# df3.plot(x='timestamp_(min)')
+# plt.show()
+# import influxdb_client
+# def query_dataframe(flux: str):
+#     # 1. 读取数据
+#     bucket = "monitor"
+#     org = "seu"
+#     token = "gZTu3-P2pKcGQI-wBgHUT1nRIckb7N_drF-r9YKUdbszy1hTrN3BwIR5CdFHshzGcW81n_SbjfI5-RQsUz11zA=="
+#     url = "http://101.35.159.221:8086"
+#     client = influxdb_client.InfluxDBClient(url=url, token=token, org=org)
+#     query_api = client.query_api()
+#     # 3天数据量大概要半分钟
+#     df = query_api.query_data_frame(flux)
+#     return df
+# # 1. 读取数据
+# flux = 'from(bucket: "monitor")|> range(start: -3d)|> filter(fn: (r) => r["_measurement"] == "cpu2" or r[' \
+#        '"_measurement"] == "disk" or r["_measurement"] == "memory" or r["_measurement"] == "net")|> filter(fn: (r) => ' \
+#        'r["address"] == "http://101.35.159.221:8081")|> drop(columns: ["result", "address", "_measurement", "_start", ' \
+#        '"_stop"])|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value") '
+# # 3天数据量大概要半分钟
+# df = query_dataframe(flux)
+# df = df.drop(['result', 'table'], axis=1)
+# df["_time"] = pd.to_datetime(df['_time'])
+# df.index = df['_time']
+# df = df.drop(columns='_time')
+# filled = df.resample('30S').mean()
+# filled = filled.interpolate(method='linear')
 pass
